@@ -1,0 +1,405 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scenic Roots – Quoter</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1e7f4b">
+<script>
+if ('serviceWorker' in navigator) { window.addEventListener('load', () => navigator.serviceWorker.register('sw.js')); }
+</script>
+<style>
+  :root{--brand:#1e7f4b;--lite:#f6f9f7;--ink:#111;--muted:#6b7280;--line:#e5e7eb}
+  *{box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;margin:0;background:#fff;color:var(--ink)}
+  header{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;background:#fff;z-index:5}
+  .brand{font-weight:700;color:var(--brand)}
+  .actions{display:flex;gap:8px;flex-wrap:wrap}
+  button{background:var(--brand);color:#fff;border:none;padding:10px 14px;border-radius:8px;font-weight:600;cursor:pointer}
+  button.secondary{background:#fff;color:var(--brand);border:1px solid var(--brand)}
+  button.ghost{background:#fff;color:#111;border:1px solid var(--line)}
+  main{display:grid;grid-template-columns:380px 1fr;gap:16px;padding:16px}
+  @media (max-width:1100px){ main{grid-template-columns:1fr} }
+  section{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  section>h3{margin:0;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--lite)}
+  .pad{padding:14px}
+  label{font-size:12px;color:var(--muted)}
+  input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;margin-top:4px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  table{width:100%;border-collapse:collapse}
+  th,td{border-bottom:1px solid var(--line);padding:8px;text-align:left;font-size:14px}
+  th{background:var(--lite)}
+  tfoot td{font-weight:700}
+  .right{text-align:right}
+  .muted{color:var(--muted)}
+  .totals{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .card{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}
+  .badge{background:#e8f5ee;color:var(--brand);padding:4px 8px;border-radius:999px;font-size:12px}
+  #proposal{max-width:900px;margin:0 auto;padding:24px;display:none}
+  #proposal h1{margin:0 0 4px 0}
+  #proposal h2{margin-top:24px}
+  #proposal .line{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:6px 0}
+  #proposal .sig{margin-top:40px}
+  @media print{ header, main{display:none !important} #proposal{display:block} body{background:#fff} }
+  .pill{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--line);font-size:12px;margin-right:6px}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Scenic Roots – Quoter</div>
+  <div class="actions">
+    <button class="secondary" id="toggleProposal">Client Proposal</button>
+    <button class="ghost" id="resetAll">Reset</button>
+    <button id="saveLocal">Save</button>
+    <button class="secondary" onclick="window.print()">Print / PDF</button>
+  </div>
+</header>
+
+<main>
+  <section id="settings">
+    <h3>Settings</h3>
+    <div class="pad">
+      <div class="row">
+        <div><label>Business Name</label><input id="bizName" value="Scenic Roots Lawn Care & Landscaping"></div>
+        <div><label>Prepared By</label><input id="preparedBy" value="Jay"></div>
+      </div>
+      <div class="row3" style="margin-top:8px">
+        <div><label>Lead $/hr</label><input id="lead" type="number" step="0.01" value="20"></div>
+        <div><label>Experienced Hand $/hr</label><input id="exp" type="number" step="0.01" value="20"></div>
+        <div><label>Helper $/hr</label><input id="helper" type="number" step="0.01" value="15"></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div><label>Blended Crew Rate $/hr</label><input id="blended" type="number" step="0.01" value="55"></div>
+        <div><label>Target Profit Margin %</label><input id="targetProfit" type="number" step="0.1" value="25"></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div><label>Overhead % (on Labor + Materials)</label><input id="overhead" type="number" step="0.1" value="10"></div>
+        <div><label>Materials Markup %</label><input id="matMarkup" type="number" step="0.1" value="10"></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div><label>Equipment/Rental Markup %</label><input id="eqMarkup" type="number" step="0.1" value="10"></div>
+        <div><label>Sales Tax %</label><input id="taxRate" type="number" step="0.1" value="0"></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div><label>Disposal/Haul Fee ($ flat)</label><input id="disposal" type="number" step="0.01" value="50"></div>
+        <div><label>Travel Fee ($ flat)</label><input id="travel" type="number" step="0.01" value="0"></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div><label>Auto-apply Jay Fee?</label>
+          <select id="autoJay"><option value="Yes" selected>Yes</option><option>No</option></select>
+        </div>
+        <div><label>Jay Fee % of Net Profit</label><input id="jayPct" type="number" step="0.1" value="33"></div>
+      </div>
+      <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px">
+        <div class="row">
+          <div><label>Basic Tier Multiplier</label><input id="tierBasic" type="number" step="0.01" value="0.90"></div>
+          <div><label>Moderate Tier Multiplier</label><input id="tierModerate" type="number" step="0.01" value="1.00"></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label>Premium Tier Multiplier</label><input id="tierPremium" type="number" step="0.01" value="1.25"></div>
+          <div><label>Default Proposal Tier</label>
+            <select id="defaultTier"><option>Base</option><option>Basic</option><option selected>Moderate</option><option>Premium</option></select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="job">
+    <h3>Job, Lines & Catalog</h3>
+    <div class="pad">
+      <div class="row">
+        <div><label>Client Name</label><input id="client"></div>
+        <div><label>Property Address</label><input id="address"></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div><label>Job Name/Ref</label><input id="jobName"></div>
+        <div class="row">
+          <div><label>Date</label><input id="jobDate" type="date"></div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div>
+          <label>Service Frequency</label>
+          <select id="frequency">
+            <option>One-time</option>
+            <option>Monthly</option>
+            <option>Biweekly</option>
+            <option>Seasonal</option>
+          </select>
+        </div>
+        <div>
+          <label>Visits per Month (for Monthly/Biweekly)</label>
+          <input id="visits" type="number" step="1" value="1">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin:14px 0;flex-wrap:wrap">
+        <span class="badge">Use the catalog to prefill common lines.</span>
+        <select id="catalogPick" style="min-width:340px"></select>
+        <button class="secondary" id="addFromCatalog">Add From Catalog</button>
+        <button class="ghost" id="addLine">Add Blank Line</button>
+        <button class="ghost" id="clearLines">Clear Lines</button>
+      </div>
+      <div class="card">
+        <table id="lines">
+          <thead>
+            <tr>
+              <th style="width:28px">#</th>
+              <th>Description</th>
+              <th style="width:80px">Unit</th>
+              <th style="width:80px" class="right">Qty</th>
+              <th style="width:120px" class="right">Unit Cost ($)</th>
+              <th style="width:120px" class="right">Material $</th>
+              <th style="width:110px" class="right">Crew Hrs</th>
+              <th style="width:120px" class="right">Labor Rate $/hr</th>
+              <th style="width:120px" class="right">Labor $</th>
+              <th style="width:120px" class="right">Equip/Rental $</th>
+              <th style="width:140px" class="right">Line Total $</th>
+              <th>Notes</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+          <tfoot>
+            <tr><td colspan="5" class="right">Totals:</td>
+                <td class="right" id="tMat">$0.00</td>
+                <td></td><td></td>
+                <td class="right" id="tLab">$0.00</td>
+                <td class="right" id="tEq">$0.00</td>
+                <td class="right" id="tLine">$0.00</td>
+                <td></td><td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="totals" style="margin-top:12px">
+        <div class="card">
+          <div class="muted" style="margin-bottom:6px">Internal Summary</div>
+          <div class="line"><span>Materials Subtotal</span><span id="sumMat">$0.00</span></div>
+          <div class="line"><span>Labor Subtotal</span><span id="sumLab">$0.00</span></div>
+          <div class="line"><span>Equipment/Rentals Subtotal</span><span id="sumEq">$0.00</span></div>
+          <div class="line"><span>Line Subtotal (pre-OH/markup/fees)</span><span id="sumPre">$0.00</span></div>
+          <div class="line"><span>Overhead</span><span id="sumOH">$0.00</span></div>
+          <div class="line"><span>Materials Markup</span><span id="sumMM">$0.00</span></div>
+          <div class="line"><span>Equipment Markup</span><span id="sumEM">$0.00</span></div>
+          <div class="line"><strong>Pre-Jay Price (with target profit)</strong><strong id="preJay">$0.00</strong></div>
+          <div class="line"><span>Jay Fee</span><span id="jayFee">$0.00</span></div>
+          <div class="line"><strong>Final Price</strong><strong id="finalPrice">$0.00</strong></div>
+          <div class="line"><span>Sales Tax</span><span id="taxAmt">$0.00</span></div>
+          <div class="line"><strong>Total Due</strong><strong id="totalDue">$0.00</strong></div>
+        </div>
+        <div class="card">
+          <div class="muted" style="margin-bottom:6px">Tiered Prices (based on Final Price)</div>
+          <div class="line"><span class="pill">Base</span><span id="tierBase">$0.00</span></div>
+          <div class="line"><span class="pill">Basic</span><span id="tierBasicOut">$0.00</span></div>
+          <div class="line"><span class="pill">Moderate</span><span id="tierModerateOut">$0.00</span></div>
+          <div class="line"><span class="pill">Premium</span><span id="tierPremiumOut">$0.00</span></div>
+          <div style="margin-top:10px">
+            <label>Proposal Tier</label>
+            <select id="proposalTier">
+              <option>Base</option>
+              <option>Basic</option>
+              <option selected>Moderate</option>
+              <option>Premium</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <label>Scope of Work (client summary)</label>
+        <textarea id="scope" rows="8" style="width:100%;margin-top:6px"></textarea>
+      </div>
+    </div>
+  </section>
+</main>
+<div id="proposal">
+  <h1>Scenic Roots – Client Proposal</h1>
+  <div class="muted" id="pBiz"></div>
+  <div style="margin:12px 0 18px 0">
+    <div class="line"><strong>Client</strong><span id="pClient"></span></div>
+    <div class="line"><strong>Property</strong><span id="pAddr"></span></div>
+    <div class="line"><strong>Job</strong><span id="pJob"></span></div>
+    <div class="line"><strong>Date</strong><span id="pDate"></span></div>
+  </div>
+  <h2>Scope of Work</h2>
+  <div id="pScope"></div>
+  <h2>Investment</h2>
+  <div class="line"><span id="pTierLabel">Estimated Investment</span><span id="pFinal"></span></div>
+  <div class="line"><span>Sales Tax</span><span id="pTax"></span></div>
+  <div class="line"><strong>Total Due</strong><strong id="pDue"></strong></div>
+  <div class="sig">
+    <p>By signing below, you agree to the above scope and investment.</p>
+    <p>Client Signature: _____________________________ &nbsp;&nbsp; Date: __________</p>
+    <p>Printed Name: __________________________________________</p>
+  </div>
+  <div class="muted" style="margin-top:24px" id="pContact"></div>
+</div>
+<script>
+const $ = s=>document.querySelector(s);
+const $$ = s=>document.querySelectorAll(s);
+const fmt = n => (isNaN(n)?0:n).toLocaleString(undefined,{style:'currency',currency:'USD'});
+const CATALOG = [
+  {item:"Mulch (Hardwood, delivered)", unit:"yard", baseCost:80, defQty:1, defHrs:0.25, note:"Local price; includes delivery"},
+  {item:"Topsoil (screened)", unit:"yard", baseCost:80, defQty:1, defHrs:0.2, note:"$80/yd user-specified"},
+  {item:"Riprap (#57/#3/#4)", unit:"ton", baseCost:55, defQty:1, defHrs:0.3, note:"Average quarry cost"},
+  {item:"Edging install (paver/stone)", unit:"lf", baseCost:10, defQty:50, defHrs:6, note:"Materials may vary"},
+  {item:"Bed reshape + weed fabric", unit:"sqft", baseCost:0.5, defQty:100, defHrs:4, note:"Add fabric rolls in materials if needed"},
+  {item:"Shrub install (3-gal)", unit:"each", baseCost:30, defQty:10, defHrs:2, note:"Nursery avg w/ handling"},
+  {item:"Perennial install (1-gal)", unit:"each", baseCost:12, defQty:20, defHrs:2, note:"Nursery avg"},
+  {item:"Debris haul-off (pickup load)", unit:"load", baseCost:0, defQty:1, defHrs:1.5, note:"Use Disposal fee in Settings"},
+  {item:"Drainage ditch dig/shape", unit:"lf", baseCost:0, defQty:100, defHrs:10, note:"Add Mini-ex rental if needed"},
+  {item:"Mini excavator rental (day)", unit:"day", baseCost:300, defQty:1, defHrs:0, note:"Rental/day"},
+  {item:"Landscape fabric (roll)", unit:"roll", baseCost:45, defQty:1, defHrs:0.2, note:"3x100' example"},
+  {item:"Paver sand (bag)", unit:"bag", baseCost:6, defQty:10, defHrs:0.5, note:"Base bedding"},
+  {item:"Labor (custom hours)", unit:"hr", baseCost:0, defQty:0, defHrs:1, note:"Use for ad-hoc tasks"}
+];
+function getSettings(){
+  return {
+    bizName: $('#bizName').value.trim(),
+    preparedBy: $('#preparedBy').value.trim(),
+    blended: +$('#blended').value||55,
+    targetProfit: (+$('#targetProfit').value||25)/100,
+    overhead: (+$('#overhead').value||10)/100,
+    matMarkup: (+$('#matMarkup').value||10)/100,
+    eqMarkup: (+$('#eqMarkup').value||10)/100,
+    disposal: +($('#disposal').value||50),
+    travel: +($('#travel').value||0),
+    autoJay: 'Yes',
+    jayPct: 33/100,
+    jayThreshold: 1200,
+    phone: '615-308-8477',
+    email: 'info@scenicroots.net',
+    website: 'scenicroots.net',
+    taxRate: (+$('#taxRate').value||0)/100,
+    tierBasic: (+$('#tierBasic').value||0.9),
+    tierModerate: (+$('#tierModerate').value||1.0),
+    tierPremium: (+$('#tierPremium').value||1.25)
+  };
+}
+function addLine(pref={}){
+  const tbody=$('#lines tbody');
+  const idx=tbody.children.length+1;
+  const tr=document.createElement('tr');
+  tr.innerHTML=`
+    <td>${idx}</td>
+    <td><input class="desc" placeholder="Description" value="${pref.desc||''}"></td>
+    <td><input class="unit" style="width:80px" value="${pref.unit||''}"></td>
+    <td class="right"><input class="qty" type="number" step="0.01" value="${pref.qty??(pref.defQty||'')}"></td>
+    <td class="right"><input class="unitCost" type="number" step="0.01" value="${pref.unitCost??(pref.baseCost||'')}"></td>
+    <td class="right"><span class="mat" data-val="0">$0.00</span></td>
+    <td class="right"><input class="hrs" type="number" step="0.01" value="${pref.hrs??(pref.defHrs||'')}"></td>
+    <td class="right"><input class="rate" type="number" step="0.01" value="${pref.rate||getSettings().blended}"></td>
+    <td class="right"><span class="lab" data-val="0">$0.00</span></td>
+    <td class="right"><input class="eq" type="number" step="0.01" value="${pref.eq||''}"></td>
+    <td class="right"><span class="total" data-val="0">$0.00</span></td>
+    <td><input class="note" placeholder="Notes" value="${pref.note||''}"></td>
+    <td><button class="ghost del">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+  tr.addEventListener('input', recalc);
+  tr.querySelector('.del').addEventListener('click', ()=>{ tr.remove(); renumber(); recalc(); });
+  recalc();
+}
+function addFromCatalogIdx(i){
+  const c = CATALOG[i];
+  addLine({desc:c.item, unit:c.unit, baseCost:c.baseCost, defQty:c.defQty, defHrs:c.defHrs, note:c.note});
+}
+function renumber(){ [...$('#lines tbody').children].forEach((tr,i)=> tr.children[0].textContent=i+1 ) }
+function calcCore(){
+  const s=getSettings();
+  let tMat=0,tLab=0,tEq=0;
+  [...$('#lines tbody').children].forEach(tr=>{
+    const qty=+(tr.querySelector('.qty').value||0);
+    const unitCost=+(tr.querySelector('.unitCost').value||0);
+    const hrs=+(tr.querySelector('.hrs').value||0);
+    const rate=+(tr.querySelector('.rate').value||s.blended);
+    const eq=+(tr.querySelector('.eq').value||0);
+    const mat=qty*unitCost;
+    const lab=hrs*rate;
+    const line=mat+lab+eq;
+    tr.querySelector('.mat').dataset.val=mat; tr.querySelector('.mat').textContent=fmt(mat);
+    tr.querySelector('.lab').dataset.val=lab; tr.querySelector('.lab').textContent=fmt(lab);
+    tr.querySelector('.total').dataset.val=line; tr.querySelector('.total').textContent=fmt(line);
+    tMat+=mat; tLab+=lab; tEq+=eq;
+  });
+  const lineSubtotal=tMat+tLab+tEq;
+  const overhead=s.overhead*(tMat+tLab);
+  const matMarkup=s.matMarkup*tMat;
+  const eqMarkup=s.eqMarkup*tEq;
+  const preFee = lineSubtotal + overhead + matMarkup + eqMarkup + s.disposal + s.travel;
+  const profitTarget = preFee * s.targetProfit;
+  const preJayPrice = preFee + profitTarget;
+  const netProfitBeforeJay = profitTarget;
+  const jayApplies=(s.autoJay==='Yes' && preJayPrice>=s.jayThreshold);
+  const jayFee = jayApplies ? s.jayPct * netProfitBeforeJay : 0;
+  const finalPrice = preJayPrice + jayFee;
+  const tax = finalPrice * s.taxRate;
+  const totalDue = finalPrice + tax;
+  return {tMat,tLab,tEq,lineSubtotal,overhead,matMarkup,eqMarkup,preFee,profitTarget,preJayPrice,jayFee,finalPrice,tax,totalDue};
+}
+function recalc(){
+  const s=getSettings();
+  const c=calcCore();
+  $('#tMat').textContent=fmt(c.tMat);
+  $('#tLab').textContent=fmt(c.tLab);
+  $('#tEq').textContent=fmt(c.tEq);
+  $('#tLine').textContent=fmt(c.lineSubtotal);
+  $('#sumMat').textContent=fmt(c.tMat);
+  $('#sumLab').textContent=fmt(c.tLab);
+  $('#sumEq').textContent=fmt(c.tEq);
+  $('#sumPre').textContent=fmt(c.lineSubtotal);
+  $('#sumOH').textContent=fmt(c.overhead);
+  $('#sumMM').textContent=fmt(c.matMarkup);
+  $('#sumEM').textContent=fmt(c.eqMarkup);
+  $('#preJay').textContent=fmt(c.preJayPrice);
+  $('#jayFee').textContent=fmt(c.jayFee);
+  $('#finalPrice').textContent=fmt(c.finalPrice);
+  $('#taxAmt').textContent=fmt(c.tax);
+  $('#totalDue').textContent=fmt(c.totalDue);
+  const base = c.finalPrice;
+  const basic = base * (+$('#tierBasic').value||0.9);
+  const moderate = base * (+$('#tierModerate').value||1.0);
+  const premium = base * (+$('#tierPremium').value||1.25);
+  $('#tierBase').textContent=fmt(base);
+  $('#tierBasicOut').textContent=fmt(basic);
+  $('#tierModerateOut').textContent=fmt(moderate);
+  $('#tierPremiumOut').textContent=fmt(premium);
+  $('#pBiz').textContent=`Scenic Roots Lawn Care & Landscaping — Prepared by ${$('#preparedBy').value}`;
+  $('#pClient').textContent=$('#client').value;
+  $('#pAddr').textContent=$('#address').value;
+  $('#pJob').textContent=$('#jobName').value;
+  $('#pDate').textContent=$('#jobDate').value||new Date().toISOString().slice(0,10);
+  $('#pScope').textContent=$('#scope').value;
+  $('#pFinal').textContent=fmt(moderate);
+  $('#pTax').textContent=fmt(moderate*((+$('#taxRate').value||0)/100));
+  $('#pDue').textContent=fmt(moderate + moderate*((+$('#taxRate').value||0)/100));
+  $('#pContact').textContent=`scenicroots.net • 615-308-8477 • info@scenicroots.net`;
+}
+function populateCatalog(){
+  const sel = $('#catalogPick');
+  sel.innerHTML = '';
+  CATALOG.forEach((c,i)=>{
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `${c.item} — ${c.unit} @ ${fmt(c.baseCost)} (hrs ${c.defHrs})`;
+    sel.appendChild(opt);
+  });
+}
+$('#addLine').addEventListener('click', ()=> addLine());
+$('#clearLines').addEventListener('click', ()=> { $('#lines tbody').innerHTML=''; addLine(); recalc(); });
+$('#addFromCatalog').addEventListener('click', ()=> { const idx = +$('#catalogPick').value||0; addFromCatalogIdx(idx); });
+$('#saveLocal').addEventListener('click', ()=> { alert('Saved locally on this device.'); });
+$('#resetAll').addEventListener('click', ()=> { location.reload(); });
+$('#toggleProposal').addEventListener('click', ()=> {
+  const p=$('#proposal'); p.style.display=(p.style.display==='block'?'none':'block'); window.scrollTo(0,0);
+});
+document.addEventListener('input', (e)=>{
+  if(e.target.closest('#settings') || e.target.closest('#job') || e.target.closest('#lines')) recalc();
+});
+populateCatalog(); addLine(); addLine(); recalc();
+</script>
+</body>
+</html>
